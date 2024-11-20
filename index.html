@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kalnia:wght@600&family=Poppins:wght@300&display=swap" rel="stylesheet">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Logistics Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <style> h1{
+         font-family: 'Kalnia',serif;
+         text-align: center;
+         font-size: 50px;
+         color: #005499;
+        } </style>
+        
+        <h1>Airport Logistics Management System</h1>
+        <nav>
+            <ul>
+                <li><a href="home.html">Home</a></li>
+                <li><a href="index.html">Manage Flights</a></li>
+                <!-- Add more links here as needed -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div>
+            <h2>Create Flight</h2>
+            <form id="create-flight-form">
+                <input type="text" id="flightNumber" placeholder="Flight Number" required>
+                <input type="text" id="airline" placeholder="Airline" required>
+                <input type="text" id="destination" placeholder="Destination" required>
+                <input type="datetime-local" id="departureTime" required>
+                <input type="text" id="status" placeholder="Status">
+                <button type="submit">Create Flight</button>
+            </form>
+        </div>
+        <div>
+            <h2>Flights</h2>
+            <table id="flights-table">
+                <thead>
+                    <tr>
+                        <th>Flight Number</th>
+                        <th>Airline</th>
+                        <th>Destination</th>
+                        <th>Departure Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="flights-list">
+                    <!-- Flights will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <script>
+        async function createFlight(flight) {
+            const response = await fetch('/api/flights', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(flight)
+            });
+            return response.json();
+        }
+
+        async function getFlights() {
+            const response = await fetch('/api/flights');
+            return response.json();
+        }
+
+        async function updateFlight(id, updates) {
+            const response = await fetch(`/api/flights/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updates)
+            });
+            return response.json();
+        }
+
+        async function deleteFlight(id) {
+            const response = await fetch(`/api/flights/${id}`, {
+                method: 'DELETE'
+            });
+            return response.json();
+        }
+
+        document.getElementById('create-flight-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const flight = {
+                flightNumber: document.getElementById('flightNumber').value,
+                airline: document.getElementById('airline').value,
+                destination: document.getElementById('destination').value,
+                departureTime: document.getElementById('departureTime').value,
+                status: document.getElementById('status').value
+            };
+            await createFlight(flight);
+            loadFlights();
+        });
+
+        async function loadFlights() {
+            const flights = await getFlights();
+            const flightsList = document.getElementById('flights-list');
+            flightsList.innerHTML = '';
+            flights.forEach(flight => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${flight.flightNumber}</td>
+                    <td>${flight.airline}</td>
+                    <td>${flight.destination}</td>
+                    <td>${new Date(flight.departureTime).toLocaleString()}</td>
+                    <td>${flight.status}</td>
+                    <td>
+                        <button class="edit-button" onclick="editFlight('${flight._id}')">Edit</button>
+                        <button class="delete-button" onclick="removeFlight('${flight._id}')">Delete</button>
+                    </td>
+                `;
+                flightsList.appendChild(tr);
+            });
+        }
+
+        async function editFlight(id) {
+            const flight = promptEditFlight();
+            if (flight) {
+                await updateFlight(id, flight);
+                loadFlights();
+            }
+        }
+
+        async function removeFlight(id) {
+            await deleteFlight(id);
+            loadFlights();
+        }
+
+        function promptEditFlight() {
+            const flightNumber = prompt('Enter new Flight Number');
+            const airline = prompt('Enter new Airline');
+            const destination = prompt('Enter new Destination');
+            const departureTime = prompt('Enter new Departure Time (YYYY-MM-DDTHH:MM)');
+            const status = prompt('Enter new Status');
+            return { flightNumber, airline, destination, departureTime, status };
+        }
+
+        document.addEventListener('DOMContentLoaded', loadFlights);
+    </script>
+</body>
+</html>
